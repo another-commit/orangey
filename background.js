@@ -66,6 +66,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg === "GET_ACCOUNT") {
     if (accountCache) {
       sendResponse(accountCache);
+      accountCache = null;
       loadCache();
     } else {
       loadCache().then((account) => {
