@@ -1,12 +1,9 @@
-// const API_BASE =
-//   "https://pte-backend-token-DlksYKNDindmnLHDLIWNDlkxkljlkDLKdkDllkdLK.vercel.app";
 const API_BASE =
-  "https://02b0da13-7ac3-46f9-a55b-0d79c3336f8f-00-3ievsj9uzmdpa.pike.replit.dev";
+  "https://pte-backend-token-DlksYKNDindmnLHDLIWNDlkxkljlkDLKdkDllkdLK.vercel.app";
 var accountCache = null;
 
 async function getAccount() {
   const nonce = Date.now().toString() + Math.floor(Math.random() * 99);
-  await new Promise((r) => setTimeout(r, 3000));
   try {
     const rawRes = await fetch(
       "https://any.apeuni.com/api/v1/users/registration/sign_up?",
