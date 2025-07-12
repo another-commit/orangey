@@ -4,10 +4,27 @@
     "version": "1.0",
     "description": "a word orangey.",
     "permissions": [
-        "cookies"
+        "tabs",
+        "cookies",
+        "scripting",
+        "webNavigation"
     ],
     "host_permissions": [
-        "https://www.apeuni.com/*"
+        "https://*.apeuni.com/*"
+    ],
+    "icons": {
+        "64": "icons/orange.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.apeuni.com/practice/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
     ],
     "background": {
         "service_worker": "background.js"
