@@ -1,7 +1,9 @@
 const API_BASE =
   "https://pte-backend-token-DlksYKNDindmnLHDLIWNDlkxkljlkDLKdkDllkdLK.vercel.app";
-var accountCache = null;
-var uuid = crypto.randomUUID();
+
+// const uuid = crypto.randomUUID();
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function getAccount() {
   const nonce = Date.now().toString() + Math.floor(Math.random() * 99);
   try {
@@ -16,7 +18,7 @@ async function getAccount() {
         body: JSON.stringify({
           api_type: "e1",
           device_type: "web-1.0.0-Chrome-Chrome 138.0.0.0 on Windows 10 64-bit",
-          device_id: uuid,
+          // device_id: uuid,
           first_visit_time: Date.now() / 1000,
           logged_in: false,
           locale: "en",
@@ -41,16 +43,16 @@ async function getAccount() {
 
     const session = await createRes.text();
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    delay(1000);
 
     let verificationToken = null;
-    for (let attempt = 0; attempt <= 5; attempt++) {
+    for (let attempt = 0; attempt < 6; attempt++) {
       const response = await fetch(`${API_BASE}/read?nonce=${nonce}`);
       if (response.status === 200) {
         verificationToken = await response.text();
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      delay(500);
     }
 
     if (verificationToken) {
@@ -74,9 +76,14 @@ let cacheLoadingPromise = null;
 function loadCache() {
   if (!cacheLoadingPromise) {
     cacheLoadingPromise = getAccount().then((account) => {
-      accountCache = account;
-      cacheLoadingPromise = null;
-      return account;
+      return chrome.storage.session
+        .set({
+          accountCache: account,
+        })
+        .then(() => {
+          cacheLoadingPromise = null;
+          return account;
+        });
     });
   }
   return cacheLoadingPromise;
@@ -88,13 +95,13 @@ function setAccount(currentAcc) {
     const currentUrl = tabs[0]?.url;
     if (!currentUrl || !currentUrl.includes("apeuni.com")) return;
     const urlObj = new URL(currentUrl);
-    chrome.cookies.set({
-      url: urlObj.origin,
-      name: "device_id",
-      value: uuid,
-      path: "/",
-      expirationDate: Math.floor(Date.now() / 1000) + 46000,
-    });
+    // chrome.cookies.set({
+    //   url: urlObj.origin,
+    //   name: "device_id",
+    //   value: uuid,
+    //   path: "/",
+    //   expirationDate: Math.floor(Date.now() / 1000) + 46000,
+    // });
 
     chrome.cookies.set({
       url: urlObj.origin,
@@ -108,22 +115,31 @@ function setAccount(currentAcc) {
   accountCache = null;
 }
 
-var ACTIVE = false;
+chrome.storage.session.set({ isActive: false });
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg === "SET_ACCOUNT") {
-    if (accountCache) {
-      setAccount(accountCache);
-      loadCache();
-    } else {
-      loadCache().then((account) => {
-        setAccount(account);
+    chrome.storage.session.get(["accountCache"], ({ accountCache }) => {
+      if (accountCache) {
+        setAccount(accountCache);
         loadCache();
-      });
-    }
+      } else {
+        loadCache().then((account) => {
+          setAccount(account);
+          loadCache();
+        });
+      }
+    });
   } else if (msg === "STATE") {
-    sendResponse(ACTIVE);
+    chrome.storage.session.get("isActive", ({ isActive }) => {
+      sendResponse(isActive);
+    });
+    return true;
   } else if (msg === "TOGGLE_STATE") {
-    ACTIVE = !ACTIVE;
-    sendResponse(ACTIVE);
+    chrome.storage.session.get("isActive", ({ isActive }) => {
+      chrome.storage.session.set({ isActive: !isActive });
+      sendResponse(!isActive);
+    });
+    return true;
   }
 });
