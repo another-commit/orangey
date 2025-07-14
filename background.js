@@ -12,12 +12,13 @@ async function getAccount() {
           accept: "application/json",
           "content-type": "application/json;charset=UTF-8",
         },
+        credentials: "omit",
         body: JSON.stringify({
           api_type: "e1",
           device_type: "web-1.0.0-Chrome-Chrome 138.0.0.0 on Windows 10 64-bit",
           device_id: uuid,
           first_visit_time: Date.now() / 1000,
-          logged_in: true,
+          logged_in: false,
           locale: "en",
           s: "wa",
           nickname: nonce,
@@ -54,7 +55,10 @@ async function getAccount() {
 
     if (verificationToken) {
       const confirmationRes = await fetch(
-        `https://www.apeuni.com/users/confirmation?confirmation_token=${verificationToken}&locale=en`
+        `https://www.apeuni.com/users/confirmation?confirmation_token=${verificationToken}&locale=en`,
+        {
+          credentials: "omit",
+        }
       );
       if (confirmationRes.ok) {
         return session;
