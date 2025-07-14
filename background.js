@@ -1,7 +1,7 @@
 const API_BASE =
   "https://pte-backend-token-DlksYKNDindmnLHDLIWNDlkxkljlkDLKdkDllkdLK.vercel.app";
 var accountCache = null;
-
+var uuid = crypto.randomUUID();
 async function getAccount() {
   const nonce = Date.now().toString() + Math.floor(Math.random() * 99);
   try {
@@ -15,7 +15,8 @@ async function getAccount() {
         body: JSON.stringify({
           api_type: "e1",
           device_type: "web-1.0.0-Chrome-Chrome 138.0.0.0 on Windows 10 64-bit",
-          first_visit_time: Date.now(),
+          device_id: uuid,
+          first_visit_time: Date.now() / 1000,
           logged_in: true,
           locale: "en",
           s: "wa",
@@ -67,7 +68,6 @@ async function getAccount() {
 let cacheLoadingPromise = null;
 
 function loadCache() {
-  console.log("grabing cache");
   if (!cacheLoadingPromise) {
     cacheLoadingPromise = getAccount().then((account) => {
       accountCache = account;
@@ -84,6 +84,14 @@ function setAccount(currentAcc) {
     const currentUrl = tabs[0]?.url;
     if (!currentUrl || !currentUrl.includes("apeuni.com")) return;
     const urlObj = new URL(currentUrl);
+    chrome.cookies.set({
+      url: urlObj.origin,
+      name: "device_id",
+      value: uuid,
+      path: "/",
+      expirationDate: Math.floor(Date.now() / 1000) + 46000,
+    });
+
     chrome.cookies.set({
       url: urlObj.origin,
       name: "user_token",
