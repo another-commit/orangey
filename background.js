@@ -1,7 +1,6 @@
 const API_BASE =
   "https://pte-backend-token-DlksYKNDindmnLHDLIWNDlkxkljlkDLKdkDllkdLK.vercel.app";
 
-// const uuid = crypto.randomUUID();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function getAccount() {
@@ -43,7 +42,7 @@ async function getAccount() {
 
     const session = await createRes.text();
 
-    delay(1000);
+    await delay(1000);
 
     let verificationToken = null;
     for (let attempt = 0; attempt < 6; attempt++) {
@@ -52,7 +51,7 @@ async function getAccount() {
         verificationToken = await response.text();
         break;
       }
-      delay(500);
+      await delay(500);
     }
 
     if (verificationToken) {
@@ -111,15 +110,13 @@ function setAccount(currentAcc) {
       expirationDate: Math.floor(Date.now() / 1000) + 36000,
     });
     chrome.tabs.reload(tabs[0].id);
+    chrome.storage.session.remove("accountCache");
   });
-  accountCache = null;
 }
-
-chrome.storage.session.set({ isActive: false });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg === "SET_ACCOUNT") {
-    chrome.storage.session.get(["accountCache"], ({ accountCache }) => {
+    chrome.storage.session.get("accountCache", ({ accountCache }) => {
       if (accountCache) {
         setAccount(accountCache);
         loadCache();
@@ -132,7 +129,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
   } else if (msg === "STATE") {
     chrome.storage.session.get("isActive", ({ isActive }) => {
-      sendResponse(isActive);
+      sendResponse(isActive ?? false);
     });
     return true;
   } else if (msg === "TOGGLE_STATE") {
