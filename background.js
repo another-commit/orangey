@@ -35,6 +35,9 @@ async function getAccount() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-auth-key": await new Promise((r) =>
+          chrome.storage.session.get("password", ({ password }) => r(password))
+        ),
       },
       body: JSON.stringify(response),
     });
@@ -46,7 +49,15 @@ async function getAccount() {
 
     let verificationToken = null;
     for (let attempt = 0; attempt < 6; attempt++) {
-      const response = await fetch(`${API_BASE}/read?nonce=${nonce}`);
+      const response = await fetch(`${API_BASE}/read?nonce=${nonce}`, {
+        headers: {
+          "x-auth-key": await new Promise((r) =>
+            chrome.storage.session.get("password", ({ password }) =>
+              r(password)
+            )
+          ),
+        },
+      });
       if (response.status === 200) {
         verificationToken = await response.text();
         break;
@@ -87,7 +98,6 @@ function loadCache() {
   }
   return cacheLoadingPromise;
 }
-loadCache();
 
 function setAccount(currentAcc) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -115,7 +125,7 @@ function setAccount(currentAcc) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg === "SET_ACCOUNT") {
+  if (msg.action === "SET_ACCOUNT") {
     chrome.storage.session.get("accountCache", ({ accountCache }) => {
       if (accountCache) {
         setAccount(accountCache);
@@ -127,16 +137,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
       }
     });
-  } else if (msg === "STATE") {
-    chrome.storage.session.get("isActive", ({ isActive }) => {
-      sendResponse(isActive ?? false);
+  } else if (msg.action === "STATE") {
+    chrome.storage.session.get("password", ({ password }) => {
+      sendResponse(password);
     });
-    return true;
-  } else if (msg === "TOGGLE_STATE") {
-    chrome.storage.session.get("isActive", ({ isActive }) => {
-      chrome.storage.session.set({ isActive: !isActive });
-      sendResponse(!isActive);
+  } else if (msg.action === "SET_PASSWORD") {
+    chrome.storage.session.set({ password: msg.data }, () => {
+      chrome.storage.session.get("accountCache", ({ accountCache }) => {
+        if (!accountCache) {
+          loadCache();
+        }
+        sendResponse(msg.data);
+      });
     });
-    return true;
   }
+  return true;
 });
