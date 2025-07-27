@@ -1,6 +1,5 @@
 if (!window.__replenishInjected) {
   window.__replenishInjected = true;
-
   const BUTTON_ID = "replenish-btn";
   const TARGET_SELECTOR =
     "#root > div.Wrapper-sc-vp4h46.iWqOCa > div.ant-spin-nested-loading > div > div.ant-row-flex.ant-row-flex-space-between > div:nth-child(2)";
@@ -49,7 +48,7 @@ if (!window.__replenishInjected) {
   async function renderButton() {
     try {
       const STATE = await new Promise((resolve) =>
-        chrome.runtime.sendMessage("STATE", resolve)
+        chrome.runtime.sendMessage({ action: "STATE" }, resolve)
       );
       console.log("-".repeat(100), STATE);
       if (!STATE) return;
@@ -69,13 +68,13 @@ if (!window.__replenishInjected) {
       targetElement.insertAdjacentHTML("afterbegin", buttonHTML);
 
       const btn = document.getElementById(BUTTON_ID);
-      let clicked = false;
+      var clicked = false;
 
       btn.onclick = async () => {
         if (clicked) return;
         clicked = true;
         try {
-          chrome.runtime.sendMessage("SET_ACCOUNT");
+          chrome.runtime.sendMessage({ action: "SET_ACCOUNT" });
         } catch (e) {
           console.error("Token injection failed", e);
         } finally {
